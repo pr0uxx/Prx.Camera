@@ -1,0 +1,32 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <LangVersion>latestmajor</LangVersion>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <PublishAot>true</PublishAot>
+        <InvariantGlobalization>true</InvariantGlobalization>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.9" />
+      <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.9" />
+    </ItemGroup>
+
+    <Target Name="InjectVersionClass" BeforeTargets="CoreCompile">
+        <PropertyGroup>
+            <GeneratedVersionFile>$(IntermediateOutputPath)AppVersion.g.cs</GeneratedVersionFile>
+        </PropertyGroup>
+        <WriteLinesToFile
+                File="$(GeneratedVersionFile)"
+                Lines="internal static class AppVersion { public const string Version = &quot;$(Version)&quot;; }"
+                Overwrite="true"
+                WriteOnlyWhenDifferent="true" />
+        <ItemGroup>
+            <Compile Include="$(GeneratedVersionFile)" />
+        </ItemGroup>
+    </Target>
+
+</Project>

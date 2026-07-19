@@ -1,0 +1,82 @@
+name: publish-release
+
+# Called only by release.yml via `uses:` - not meant to be run standalone,
+# and not part of the plugin-discovered build-*.yml set.
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+      build_run_ids:
+        description: >
+          JSON array of {"file": "<build workflow filename>", "runId": "<dispatched run id>"}
+          objects, one per completed build. Produced by release.yml.
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      # Each build ran as its own workflow_dispatch run (not a job in this
+      # run), so artifacts have to be pulled across runs by ID rather than
+      # via a plain actions/download-artifact. `gh run download` handles the
+      # auth + API calls for that in one step per run.
+      - name: Download build artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p release
+          echo '${{ inputs.build_run_ids }}' | jq -r '.[].runId' | while read -r RUN_ID; do
+            echo "Downloading artifacts from run ${RUN_ID}"
+            gh run download "${RUN_ID}" --dir release --repo "${GITHUB_REPOSITORY}"
+          done
+          echo "Downloaded:"
+          find release -maxdepth 3 -type f
+
+      - name: Flatten artifact directories
+        run: |
+          set -euo pipefail
+          # gh run download nests each artifact in its own named subfolder;
+          # flatten so checksums/the release step see plain binary files.
+          find release -mindepth 2 -type f -exec mv -t release {} +
+          find release -mindepth 1 -type d -empty -delete
+          ls -la release
+
+      - name: Generate checksums
+        run: |
+          set -euo pipefail
+          cd release
+          for f in *; do
+            [ -f "$f" ] || continue
+            sha256sum "$f" > "$f.sha256"
+          done
+          ls -la
+
+      - name: Generate SBOM (optional)
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          # Soft-fail on purpose: a missing/misconfigured SBOM generator
+          # should never block a release. Swap in the exact invocation for
+          # whichever tool you standardize on (e.g. Microsoft's sbom-tool,
+          # installed as a dotnet global tool) - confirm its current CLI
+          # syntax before relying on this in production.
+          if command -v sbom-tool >/dev/null 2>&1; then
+            sbom-tool generate -b ./release -bc . -pn Prx.Camera -pv "${{ inputs.version }}" -ps "YourOrg"
+          else
+            echo "sbom-tool not found on runner - skipping SBOM generation."
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.version }}
+          name: "Release ${{ inputs.version }}"
+          files: release/*

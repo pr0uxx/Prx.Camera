@@ -1,0 +1,56 @@
+name: build-linux-x64
+
+# This file is never triggered directly by a person. The release orchestrator
+# (.github/workflows/release.yml) discovers every build-*.yml in this folder
+# and dispatches it via the API, so adding a new platform is just "add a new
+# build-*.yml file here" - no orchestrator edit required.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to embed in the build. Must match the release tag (e.g. 1.2.3)."
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      # No cross-compilation toolchain needed here - ubuntu-latest runners
+      # are already linux-x64, so this is a native (non-cross) AOT publish.
+      - name: Restore
+        run: dotnet restore
+
+      - name: Publish AOT (linux-x64)
+        run: >
+          dotnet publish
+          -c Release
+          -r linux-x64
+          -p:Version=${{ inputs.version }}
+          -p:PublishAot=true
+          -p:StripSymbols=true
+          -p:DebuggerSupport=false
+          -p:StackTraceSupport=false
+          -p:InvariantGlobalization=true
+          -p:IlcUseLLVM=true
+          -p:IlcInstructionSet=x86-64-v2
+          --self-contained true
+          -o ./publish
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: prx-camera-linux-x64-${{ inputs.version }}
+          path: publish/Prx.Camera
+          if-no-files-found: error

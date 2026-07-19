@@ -1,0 +1,77 @@
+name: build-rpi-3
+
+# This file is never triggered directly by a person. The release orchestrator
+# (.github/workflows/release.yml) discovers every build-*.yml in this folder
+# and dispatches it via the API, so adding a new platform is just "add a new
+# build-*.yml file here" - no orchestrator edit required.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to embed in the build. Must match the release tag (e.g. 1.2.3)."
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      # Native AOT for linux-arm64 does NOT work out of the box on an x64
+      # (ubuntu-latest) runner - dotnet publish needs an actual cross linker
+      # and target-architecture zlib to produce the native binary. Without
+      # this step the publish below fails at the native compile/link stage.
+      # Sequence follows Microsoft's documented cross-compile steps:
+      # https://learn.microsoft.com/dotnet/core/deploying/native-aot/cross-compile
+      - name: Install ARM64 cross-compilation toolchain
+        run: |
+          set -euo pipefail
+          UBUNTU_CODENAME=$(lsb_release -cs)
+          sudo dpkg --add-architecture arm64
+          sudo tee /etc/apt/sources.list.d/arm64.list > /dev/null <<EOF
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ ${UBUNTU_CODENAME} main restricted universe multiverse
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ ${UBUNTU_CODENAME}-updates main restricted universe multiverse
+          EOF
+          sudo sed -i -e 's/^deb http/deb [arch=amd64] http/g' /etc/apt/sources.list
+          sudo apt-get update
+          sudo apt-get install -y clang llvm binutils-aarch64-linux-gnu gcc-aarch64-linux-gnu zlib1g-dev:arm64
+
+      - name: Restore
+        run: dotnet restore
+
+      # NOTE: Pi 3 and Pi 4 both map to the .NET RID "linux-arm64" - there is
+      # currently no separate RID between them, so this build is identical to
+      # build-rpi-4.yml. Kept as a separate file so you have a natural seam
+      # if you ever need Pi-4-specific publish flags or drivers.
+      - name: Publish AOT (linux-arm64 / Raspberry Pi 3)
+        run: >
+          dotnet publish
+          -c Release
+          -r linux-arm64
+          -p:Version=${{ inputs.version }}
+          -p:PublishAot=true
+          -p:StripSymbols=true
+          -p:DebuggerSupport=false
+          -p:StackTraceSupport=false
+          -p:InvariantGlobalization=true
+          -p:IlcUseLLVM=true
+          -p:IlcInstructionSet=armv8-a
+          --self-contained true
+          -o ./publish
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: prx-camera-rpi-3-${{ inputs.version }}
+          path: publish/Prx.Camera
+          if-no-files-found: error
