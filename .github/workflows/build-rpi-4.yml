@@ -33,24 +33,47 @@ jobs:
       - name: Install ARM64 cross-compilation toolchain
         run: |
           set -euo pipefail
-          # 1. Force main repositories to amd64 only
-          sudo sed -i 's/deb http/deb [arch=amd64] http/g' /etc/apt/sources.list
 
-          # 2. Add the arm64 architecture
-          sudo dpkg --add-architecture arm64
-
-          # 3. Add the arm64 ports repository
           UBUNTU_CODENAME=$(lsb_release -cs)
-          sudo tee /etc/apt/sources.list.d/arm64.list > /dev/null <<EOF
-          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ ${UBUNTU_CODENAME} main restricted universe multiverse
-          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ ${UBUNTU_CODENAME}-updates main restricted universe multiverse
-          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ ${UBUNTU_CODENAME}-backports main restricted universe multiverse
-          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ ${UBUNTU_CODENAME}-security main restricted universe multiverse
+
+          # Remove all existing list files to avoid mixed architectures
+          sudo rm -f /etc/apt/sources.list
+          sudo rm -f /etc/apt/sources.list.d/*.list
+
+          # Create deb822 sources for amd64 (normal repos)
+          sudo tee /etc/apt/sources.list.d/ubuntu-amd64.sources > /dev/null <<EOF
+          Types: deb
+          URIs: http://archive.ubuntu.com/ubuntu/
+          Suites: ${UBUNTU_CODENAME} ${UBUNTU_CODENAME}-updates ${UBUNTU_CODENAME}-backports
+          Components: main restricted universe multiverse
+          Architectures: amd64
+
+          Types: deb
+          URIs: http://security.ubuntu.com/ubuntu/
+          Suites: ${UBUNTU_CODENAME}-security
+          Components: main restricted universe multiverse
+          Architectures: amd64
           EOF
 
-          # 4. Update and install
+          # Create deb822 sources for arm64 (ports repos)
+          sudo tee /etc/apt/sources.list.d/ubuntu-arm64.sources > /dev/null <<EOF
+          Types: deb
+          URIs: http://ports.ubuntu.com/ubuntu-ports/
+          Suites: ${UBUNTU_CODENAME} ${UBUNTU_CODENAME}-updates ${UBUNTU_CODENAME}-backports ${UBUNTU_CODENAME}-security
+          Components: main restricted universe multiverse
+          Architectures: arm64
+          EOF
+
+          # Enable arm64 architecture
+          sudo dpkg --add-architecture arm64
+
+          # Update + install cross‑compile toolchain
           sudo apt-get update
-          sudo apt-get install -y clang llvm binutils-aarch64-linux-gnu gcc-aarch64-linux-gnu zlib1g-dev:arm64
+          sudo apt-get install -y \
+            clang llvm \
+            binutils-aarch64-linux-gnu \
+            gcc-aarch64-linux-gnu \
+            zlib1g-dev:arm64
 
       - name: Restore
         run: dotnet restore
