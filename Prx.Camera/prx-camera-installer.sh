@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO="yourname/yourrepo"
+REPO="pr0uxx/Prx.Camera"
 BINARY_NAME="Prx.Camera"
 STAGING="/tmp/${BINARY_NAME}"
 INSTALL_PATH="/usr/local/bin/${BINARY_NAME}"
