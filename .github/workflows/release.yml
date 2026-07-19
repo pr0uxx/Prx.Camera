@@ -72,7 +72,6 @@ jobs:
     uses: ./.github/workflows/publish-release.yml
     with:
       version: ${{ needs.validate.outputs.version }}
-      build_run_ids: ${{ needs.collect.outputs.run_ids }}
     permissions:
       contents: write
       actions: read
