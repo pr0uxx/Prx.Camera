@@ -1,0 +1,141 @@
+name: release
+
+# Human-triggered only. Run this from the Actions tab, picking the release
+# tag as the ref (not a branch) - the tag itself is the only source of truth
+# for the version. The validate job checks it's actually a tag, checks it's
+# valid semver, and checks a release for it doesn't already exist.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.validate.outputs.version }}
+    steps:
+      - name: Validate tag and semver
+        id: validate
+        run: |
+          set -euo pipefail
+          if [ "${{ github.ref_type }}" != "tag" ]; then
+            echo "::error::This workflow must be run from a tag, not a branch. Pick a tag as the ref when dispatching."
+            exit 1
+          fi
+
+          TAG="${{ github.ref_name }}"
+
+          if ! [[ "$TAG" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Tag '${TAG}' is not valid semver (expected e.g. 1.2.3, no leading 'v')."
+            exit 1
+          fi
+
+          echo "version=${TAG}" >> "$GITHUB_OUTPUT"
+
+      # Prevents accidentally re-releasing/overwriting a version that's
+      # already been published - softprops/action-gh-release would otherwise
+      # silently update an existing release for this tag instead of failing.
+      - name: Ensure no release already exists for this tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="${{ steps.validate.outputs.version }}"
+          if gh release view "$TAG" --repo "${{ github.repository }}" >/dev/null 2>&1; then
+            echo "::error::A release already exists for tag '${TAG}'. Delete it first if this is intentional, or cut a new tag/version."
+            exit 1
+          fi
+          echo "No existing release for ${TAG} - proceeding."
+
+  # Plugin-style discovery: list every build-*.yml in the build folder so
+  # adding a platform is "drop a file here", not "edit this orchestrator".
+  discover:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.discover.outputs.matrix }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Discover build workflows
+        id: discover
+        run: |
+          set -euo pipefail
+          cd .github/workflows/build
+          files=$(ls build-*.yml 2>/dev/null | jq -R -s -c 'split("\n")[:-1]')
+          if [ "$files" == "[]" ]; then
+            echo "::error::No build-*.yml workflows found in .github/workflows/build/"
+            exit 1
+          fi
+          echo "matrix={\"file\":${files}}" >> "$GITHUB_OUTPUT"
+
+  # Dispatches every discovered build-*.yml, waits for each to finish, and
+  # records the run ID it produced (needed to pull its artifact later).
+  build:
+    needs: [validate, discover]
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.discover.outputs.matrix) }}
+    steps:
+      - name: Dispatch ${{ matrix.file }} and wait for completion
+        id: dispatch
+        uses: benc-uk/workflow-dispatch@v1
+        with:
+          workflow: build/${{ matrix.file }}
+          ref: ${{ needs.validate.outputs.version }}
+          inputs: '{ "version": "${{ needs.validate.outputs.version }}" }'
+          wait-for-completion: true
+          wait-timeout-seconds: 1800
+          sync-status: true
+
+      - name: Record run info
+        run: |
+          set -euo pipefail
+          mkdir -p run-info
+          printf '{"file":"%s","runId":"%s"}' "${{ matrix.file }}" "${{ steps.dispatch.outputs.runId }}" \
+            > "run-info/${{ matrix.file }}.json"
+
+      - name: Upload run info
+        uses: actions/upload-artifact@v4
+        with:
+          name: run-info-${{ strategy.job-index }}
+          path: run-info/
+
+  # Combines the per-platform run IDs recorded above into one JSON array to
+  # hand to publish-release.yml.
+  collect:
+    needs: build
+    runs-on: ubuntu-latest
+    outputs:
+      run_ids: ${{ steps.collect.outputs.run_ids }}
+    steps:
+      - name: Download run info
+        uses: actions/download-artifact@v4
+        with:
+          pattern: run-info-*
+          path: run-info
+          merge-multiple: true
+
+      - name: Combine run info
+        id: collect
+        run: |
+          set -euo pipefail
+          json=$(jq -s -c '.' run-info/*.json)
+          echo "run_ids=${json}" >> "$GITHUB_OUTPUT"
+
+  publish:
+    needs: [validate, collect]
+    uses: ./.github/workflows/publish-release.yml
+    with:
+      version: ${{ needs.validate.outputs.version }}
+      build_run_ids: ${{ needs.collect.outputs.run_ids }}
+    permissions:
+      contents: write
+      actions: read
+    secrets: inherit
