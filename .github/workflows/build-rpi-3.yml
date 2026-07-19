@@ -1,14 +1,11 @@
 name: build-rpi-3
 
 # This file is never triggered directly by a person. The release orchestrator
-# (.github/workflows/release.yml) discovers every build-*.yml in this folder
-# and dispatches it via the API, so adding a new platform is just "add a new
-# build-*.yml file here" - no orchestrator edit required.
+# You have to add it into the main release.yml because github is too good to allow workflow discovery.
 on:
-  workflow_dispatch:
+  workflow_call:
     inputs:
       version:
-        description: "Version to embed in the build. Must match the release tag (e.g. 1.2.3)."
         required: true
         type: string
 

@@ -102,10 +102,8 @@ sudo rm /usr/local/bin/Prx.Camera
 1. Push a tag matching strict semver, e.g. `1.2.3` (no leading `v`).
 2. From the **Actions** tab, run `release` (`workflow_dispatch`), picking that tag as the ref. There are no manual inputs — the tag itself is the only source of truth for the version.
 3. `validate` job checks: the ref is actually a tag, the tag is valid semver, and no GitHub release already exists for that tag (fails fast if one does — you'll need to delete it or cut a new tag).
-4. `discover` job lists every `build-*.yml` file in `.github/workflows/build/`.
-5. `build` job dispatches each discovered workflow via the GitHub API (`benc-uk/workflow-dispatch@v1`), waits for it to finish, and records the run ID it produced.
-6. `collect` job bundles all the run IDs into one list.
-7. `publish` job (a call to `publish-release.yml`) downloads each platform's artifact by run ID, generates a `.sha256` checksum per binary, optionally generates an SBOM, and creates the GitHub release with everything attached.
+4. Everything builds
+5. `publish` job (a call to `publish-release.yml`) downloads each platform's artifact by run ID, generates a `.sha256` checksum per binary, optionally generates an SBOM, and creates the GitHub release with everything attached.
 
 Each release therefore contains, per platform: `prx-camera-<platform>-<version>` (the binary) and `prx-camera-<platform>-<version>.sha256` (its checksum). **The installer's platform-detection logic depends on this exact naming convention** — if you change it, update `prx-camera-installer.sh` too.
 
