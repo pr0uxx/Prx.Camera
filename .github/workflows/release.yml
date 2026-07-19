@@ -49,86 +49,23 @@ jobs:
           fi
           echo "No existing release for ${TAG} - proceeding."
 
-  # Plugin-style discovery: list every build-*.yml in the build folder so
-  # adding a platform is "drop a file here", not "edit this orchestrator".
-  discover:
-    runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.discover.outputs.matrix }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+  build-linux-x64:
+    needs: validate
+    uses: ./.github/workflows/build-linux-x64.yml
+    with:
+      version: ${{ needs.validate.outputs.version }}
 
-      - name: Discover build workflows
-        id: discover
-        run: |
-          set -euo pipefail
-          cd .github/workflows
-          files=$(ls build-*.yml 2>/dev/null | jq -R -s -c 'split("\n")[:-1]')
-          if [ "$files" == "[]" ]; then
-            echo "::error::No build-*.yml workflows found in .github/workflows/"
-            exit 1
-          fi
-          echo "matrix={\"file\":${files}}" >> "$GITHUB_OUTPUT"
+  build-rpi-3:
+    needs: validate
+    uses: ./.github/workflows/build-rpi-3.yml
+    with:
+      version: ${{ needs.validate.outputs.version }}
 
-  # Dispatches every discovered build-*.yml, waits for each to finish, and
-  # records the run ID it produced (needed to pull its artifact later).
-  build:
-    needs: [validate, discover]
-    runs-on: ubuntu-latest
-    permissions:
-      actions: write
-      contents: read
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJson(needs.discover.outputs.matrix) }}
-    steps:
-      - name: Dispatch ${{ matrix.file }} and wait for completion
-        id: dispatch
-        uses: benc-uk/workflow-dispatch@v1
-        with:
-          workflow: ${{ matrix.file }}
-          ref: ${{ needs.validate.outputs.version }}
-          inputs: '{ "version": "${{ needs.validate.outputs.version }}" }'
-          wait-for-completion: true
-          wait-timeout-seconds: 1800
-          sync-status: true
-          token: ${{ secrets.PAT_WORKFLOW_DISPATCH }}
-
-      - name: Record run info
-        run: |
-          set -euo pipefail
-          mkdir -p run-info
-          printf '{"file":"%s","runId":"%s"}' "${{ matrix.file }}" "${{ steps.dispatch.outputs.runId }}" \
-            > "run-info/${{ matrix.file }}.json"
-
-      - name: Upload run info
-        uses: actions/upload-artifact@v4
-        with:
-          name: run-info-${{ strategy.job-index }}
-          path: run-info/
-
-  # Combines the per-platform run IDs recorded above into one JSON array to
-  # hand to publish-release.yml.
-  collect:
-    needs: build
-    runs-on: ubuntu-latest
-    outputs:
-      run_ids: ${{ steps.collect.outputs.run_ids }}
-    steps:
-      - name: Download run info
-        uses: actions/download-artifact@v4
-        with:
-          pattern: run-info-*
-          path: run-info
-          merge-multiple: true
-
-      - name: Combine run info
-        id: collect
-        run: |
-          set -euo pipefail
-          json=$(jq -s -c '.' run-info/*.json)
-          echo "run_ids=${json}" >> "$GITHUB_OUTPUT"
+  build-rpi-4:
+    needs: validate
+    uses: ./.github/workflows/build-rpi-4.yml
+    with:
+      version: ${{ needs.validate.outputs.version }}
 
   publish:
     needs: [validate, collect]
