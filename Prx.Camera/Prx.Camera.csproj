@@ -18,10 +18,12 @@
     <Target Name="InjectVersionClass" BeforeTargets="CoreCompile">
         <PropertyGroup>
             <GeneratedVersionFile>$(IntermediateOutputPath)AppVersion.g.cs</GeneratedVersionFile>
+            <!-- Use CDATA to avoid all XML/MSBuild quote escaping issues -->
+            <AppVersionCode><![CDATA[internal static class AppVersion { public const string Version = "$(Version)"; }]]></AppVersionCode>
         </PropertyGroup>
         <WriteLinesToFile
                 File="$(GeneratedVersionFile)"
-                Lines="internal static class AppVersion { public const string Version = &quot;$(Version)&quot;; }"
+                Lines="$(AppVersionCode)"
                 Overwrite="true"
                 WriteOnlyWhenDifferent="true" />
         <ItemGroup>
