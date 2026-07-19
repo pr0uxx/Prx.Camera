@@ -93,6 +93,7 @@ jobs:
           wait-for-completion: true
           wait-timeout-seconds: 1800
           sync-status: true
+          token: ${{ secrets.PAT_WORKFLOW_DISPATCH }}
 
       - name: Record run info
         run: |
