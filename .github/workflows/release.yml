@@ -63,10 +63,10 @@ jobs:
         id: discover
         run: |
           set -euo pipefail
-          cd .github/workflows/build
+          cd .github/workflows
           files=$(ls build-*.yml 2>/dev/null | jq -R -s -c 'split("\n")[:-1]')
           if [ "$files" == "[]" ]; then
-            echo "::error::No build-*.yml workflows found in .github/workflows/build/"
+            echo "::error::No build-*.yml workflows found in .github/workflows/"
             exit 1
           fi
           echo "matrix={\"file\":${files}}" >> "$GITHUB_OUTPUT"
@@ -87,7 +87,7 @@ jobs:
         id: dispatch
         uses: benc-uk/workflow-dispatch@v1
         with:
-          workflow: build/${{ matrix.file }}
+          workflow: ${{ matrix.file }}
           ref: ${{ needs.validate.outputs.version }}
           inputs: '{ "version": "${{ needs.validate.outputs.version }}" }'
           wait-for-completion: true
