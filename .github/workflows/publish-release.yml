@@ -23,15 +23,29 @@ jobs:
           path: release
           merge-multiple: true
 
-      - name: Generate checksums
+      - name: Rename and Generate checksums
         run: |
           set -euo pipefail
           cd release
-          for f in *; do
-            [ -f "$f" ] || continue
+          # 1. Find all Prx.Camera files in subdirectories
+          # 2. Extract the platform name from the parent directory
+          # 3. Move and rename the file
+          find . -name "Prx.Camera" | while read -r filepath; do
+            # Extract platform (e.g., 'prx-camera-linux-x64-0.0.2')
+            parent_dir=$(dirname "$filepath" | cut -d/ -f2)
+          
+            # Remove the 'prx-camera-' prefix and the '-version' suffix
+            # Resulting format: linux-x64, rpi-3, or rpi-4
+            platform=$(echo "$parent_dir" | sed -E 's/prx-camera-(.*)-[0-9]+\.[0-9]+\.[0-9]+/\1/')
+          
+            # Move and rename
+            mv "$filepath" "./Prx.Camera-$platform"
+          done
+          
+          # 4. Generate checksums for all renamed files
+          for f in Prx.Camera-*; do
             sha256sum "$f" > "$f.sha256"
           done
-          ls -la
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2

@@ -193,7 +193,7 @@ download_release() {
     # so grabbing "the" browser_download_url no longer works - filter down
     # to the asset that matches this host's platform, excluding checksums.
     ASSET_URL=$(echo "$RELEASE_JSON" | jq -r --arg platform "$PLATFORM" \
-        '.assets[] | select((.name | startswith("prx-camera-\($platform)-")) and (.name | endswith(".sha256") | not)) | .browser_download_url' \
+        '.assets[] | select((.name == "Prx.Camera-\($platform)") and (.name | endswith(".sha256") | not)) | .browser_download_url' \
         | head -n1)
     CHECKSUM_URL=$(echo "$RELEASE_JSON" | jq -r --arg platform "$PLATFORM" \
         '.assets[] | select((.name | startswith("prx-camera-\($platform)-")) and (.name | endswith(".sha256"))) | .browser_download_url' \
