@@ -68,7 +68,7 @@ jobs:
       version: ${{ needs.validate.outputs.version }}
 
   publish:
-    needs: [validate]
+    needs: [validate, build-linux-x64, build-rpi-3, build-rpi-4]
     uses: ./.github/workflows/publish-release.yml
     with:
       version: ${{ needs.validate.outputs.version }}
