@@ -94,7 +94,7 @@ jobs:
           -p:StackTraceSupport=false
           -p:InvariantGlobalization=true
           -p:IlcUseLLVM=true
-          -p:IlcInstructionSet=armv8-a,crc,crypto
+          -p:IlcInstructionSet="armv8-a crc crypto"
           --self-contained true
           -o ./publish
 
