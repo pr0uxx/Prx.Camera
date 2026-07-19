@@ -68,7 +68,7 @@ jobs:
       version: ${{ needs.validate.outputs.version }}
 
   publish:
-    needs: [validate, collect]
+    needs: [validate]
     uses: ./.github/workflows/publish-release.yml
     with:
       version: ${{ needs.validate.outputs.version }}
