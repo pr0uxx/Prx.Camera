@@ -21,7 +21,7 @@ jobs:
         with:
           pattern: prx-camera-*
           path: release
-          merge-multiple: true
+          merge-multiple: false
 
       - name: Rename and Generate checksums
         run: |
