@@ -17,7 +17,7 @@ jobs:
       # Native artifact download - pulls all artifacts matching the pattern
       # and merges them flatly into the /release directory.
       - name: Download build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: prx-camera-*
           path: release
