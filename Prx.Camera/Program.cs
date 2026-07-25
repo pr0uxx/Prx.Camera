@@ -1,6 +1,8 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Prx.Camera.Records;
 using Prx.Camera.Services;
 
 namespace Prx.Camera;
@@ -16,6 +18,8 @@ public static class Program
         }
         
         var builder = Host.CreateApplicationBuilder(args);
+        builder.Services.Configure<PrxCameraOptions>(builder.Configuration.GetSection("PrxCamera"));
+        builder.Configuration.AddEnvironmentVariables(prefix: "PRX_");
 
         builder.Logging.ClearProviders();
         builder.Logging.AddConsole();
