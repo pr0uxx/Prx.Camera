@@ -16,11 +16,15 @@ public partial class ArloProtocolParser(ILogger<ArloProtocolParser> logger) : IA
         {
             LogProcessingData(logger, data.Length);
 
-            if (TrySliceJsonFromFrame(ref data)) return ArloHandshakeRequest.DeserializeArray(data)?.FirstOrDefault();
-            
+            if (TrySliceJsonFromFrame(ref data))
+            {
+                return data[0] == (byte) '['
+                    ? ArloHandshakeRequest.DeserializeArray(data)?.FirstOrDefault()
+                    : ArloHandshakeRequest.Deserialize(data);
+            }
+
             logger.LogWarning("Slice data could not be parsed");
             return null;
-
         }
         catch (Exception e)
         {
