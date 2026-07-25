@@ -18,7 +18,7 @@ public static class Program
         }
         
         var builder = Host.CreateApplicationBuilder(args);
-        builder.Services.Configure<PrxCameraOptions>(builder.Configuration.GetSection("PrxCamera"));
+        builder.Services.Configure<PrxCameraOptions>(builder.Configuration);
         builder.Configuration.AddEnvironmentVariables(prefix: "PRX_");
 
         builder.Logging.ClearProviders();
