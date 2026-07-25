@@ -15,7 +15,12 @@ public partial class ArloProtocolParser(ILogger<ArloProtocolParser> logger) : IA
         try
         {
             LogProcessingData(logger, data.Length);
-            return ArloHandshakeRequest.DeserializeArray(data)?.FirstOrDefault();
+
+            if (TrySliceJsonFromFrame(ref data)) return ArloHandshakeRequest.DeserializeArray(data)?.FirstOrDefault();
+            
+            logger.LogWarning("Slice data could not be parsed");
+            return null;
+
         }
         catch (Exception e)
         {
@@ -24,10 +29,20 @@ public partial class ArloProtocolParser(ILogger<ArloProtocolParser> logger) : IA
 
         return null;
     }
-    
+
+    private static bool TrySliceJsonFromFrame(ref ReadOnlySpan<byte> frame)
+    {
+        if (frame.Length <= 2 || frame[0] != (byte) 'L' || frame[1] != (byte) ':') return false;
+        var spaceIndex = frame.IndexOf((byte) ' ');
+        if (spaceIndex < 0) return false;
+        frame = frame[(spaceIndex + 1)..];
+
+        return true;
+    }
+
     [LoggerMessage(Level = LogLevel.Debug, Message = "Parsing {Length} bytes from camera")]
     private static partial void LogProcessingData(ILogger logger, int length);
-    
+
     [LoggerMessage(Level = LogLevel.Error, Message = "Error during deserialization")]
     private static partial void LogDeserializationError(ILogger logger, Exception e);
 }
