@@ -91,7 +91,7 @@ jobs:
           -p:PublishAot=true
           -p:StripSymbols=true
           -p:DebuggerSupport=false
-          -p:StackTraceSupport=false
+          -p:StackTraceSupport=true
           -p:InvariantGlobalization=true
           -p:IlcUseLLVM=true
           -p:IlcInstructionSet=armv8-a
