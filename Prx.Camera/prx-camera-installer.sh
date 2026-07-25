@@ -258,9 +258,14 @@ validate_binary() {
 }
 
 install_binary() {
-    echo "Installing binary to ${INSTALL_PATH}..."
-    run_as_root cp "$STAGING" "$INSTALL_PATH"
-    run_as_root chmod +x "$INSTALL_PATH"
+    # 1. Stop the service if it's currently running
+    if systemctl is-active --quiet "${SERVICE_NAME}" 2>/dev/null; then
+        echo "[INFO] Stopping active ${SERVICE_NAME} before updating binary..."
+        run_as_root systemctl stop "${SERVICE_NAME}"
+    fi
+    
+    # 2. Use 'install' to atomically place the binary and set execute permissions
+    run_as_root install -m 755 "$STAGING" "$INSTALL_PATH"
 }
 
 install_dependencies() {
