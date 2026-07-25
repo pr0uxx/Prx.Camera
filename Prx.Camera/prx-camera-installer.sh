@@ -297,7 +297,7 @@ After=network.target
 
 [Service]
 ExecStart=${INSTALL_PATH}
-Environment=PRX_DEBUG=false
+Environment=Debug=false
 Restart=always
 RestartSec=5
 
