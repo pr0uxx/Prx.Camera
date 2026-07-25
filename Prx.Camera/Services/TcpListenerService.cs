@@ -11,7 +11,8 @@ public interface ITcpListenerService
 
 public sealed class TcpListenerService(
     IArloProtocolParser parser,
-    IRegistrationHandler handler
+    IRegistrationHandler handler,
+    ITcpLoggerService tcpLogger
     ) : ITcpListenerService
 {
     public async Task StartAsync(CancellationToken ct = default)
@@ -28,19 +29,29 @@ public sealed class TcpListenerService(
 
     private async Task ProcessClientAsync(TcpClient client, CancellationToken ct = default)
     {
+        var connectionId = Guid.NewGuid();
         await using var stream = client.GetStream();
         var buffer = ArrayPool<byte>.Shared.Rent(4096);
 
-        while (!ct.IsCancellationRequested)
+        try
         {
-            var read = await stream.ReadAsync(buffer, ct);
-            if (read <= 0) break;
-
-            var registration = parser.Parse(buffer.AsSpan(0, read));
-            if (registration is not null)
+            while (!ct.IsCancellationRequested)
             {
-                await handler.HandleAsync(registration, ct);
+                var read = await stream.ReadAsync(buffer, ct);
+                if (read <= 0) break;
+
+                tcpLogger.LogBuffer(connectionId, buffer);
+                
+                var registration = parser.Parse(buffer.AsSpan(0, read));
+                if (registration is not null)
+                {
+                    await handler.HandleAsync(registration, ct);
+                }
             }
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
         }
     }
 }
