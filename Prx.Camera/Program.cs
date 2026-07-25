@@ -25,9 +25,13 @@ public static class Program
         builder.Logging.AddConsole();
         builder.Logging.AddDebug();
         
+        builder.Logging.SetMinimumLevel(LogLevel.Information);
+        builder.Logging.AddFilter(nameof(TcpLoggerService), LogLevel.Debug);
+        
         builder.Services.AddSingleton<ITcpListenerService, TcpListenerService>();
         builder.Services.AddSingleton<IArloProtocolParser, ArloProtocolParser>();
         builder.Services.AddSingleton<IRegistrationHandler, RegistrationHandler>();
+        builder.Services.AddSingleton<ITcpLoggerService, TcpLoggerService>();
 
         builder.Services.AddHostedService<BaseStationService>();
 
