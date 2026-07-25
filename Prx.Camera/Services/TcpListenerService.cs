@@ -40,7 +40,7 @@ public sealed class TcpListenerService(
                 var read = await stream.ReadAsync(buffer, ct);
                 if (read <= 0) break;
 
-                tcpLogger.LogBuffer(connectionId, buffer);
+                tcpLogger.LogBuffer(connectionId, buffer.AsSpan(0, read));
                 
                 var registration = parser.Parse(buffer.AsSpan(0, read));
                 if (registration is not null)
