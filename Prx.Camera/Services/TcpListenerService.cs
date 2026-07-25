@@ -1,4 +1,4 @@
-using System.Diagnostics;
+using System.Buffers;
 using System.Net;
 using System.Net.Sockets;
 
@@ -29,7 +29,7 @@ public sealed class TcpListenerService(
     private async Task ProcessClientAsync(TcpClient client, CancellationToken ct = default)
     {
         await using var stream = client.GetStream();
-        var buffer = new byte[4096];
+        var buffer = ArrayPool<byte>.Shared.Rent(4096);
 
         while (!ct.IsCancellationRequested)
         {
