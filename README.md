@@ -79,6 +79,27 @@ sudo rm /usr/local/bin/Prx.Camera
 
 ## For Developers
 
+## Debugging
+
+Debugging supports verbose TCP listener logging. To enable application wide debug stdout application logging do the following:
+- Stop the application instance: `sudo systemctl stop prx.camera.service`
+- Restart the application instance with debug envvar enabled `PRX_DEBUG=1 sudo systemctl start prx-camera.service`
+
+Once you are finished with debugging, you can restart the service again with:
+`PRX_DEBUG=0 sudo systemctl restart prx.camera.service`
+
+If you need debug to persist across restarts without prefixing commands:
+
+```bash
+# Enable debugging
+sudo systemctl set-environment PRX_DEBUG=1
+sudo systemctl restart prx-camera.service
+
+# Disable debugging
+sudo systemctl unset-environment PRX_DEBUG
+sudo systemctl restart prx-camera.service
+```
+
 ### Repository layout
 
 ```
