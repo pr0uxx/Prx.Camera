@@ -298,6 +298,7 @@ After=network.target
 [Service]
 ExecStart=${INSTALL_PATH}
 Environment=Debug=false
+Environment=StateFilepath=/var/lib/prx-camera/state.bin
 Restart=always
 RestartSec=5
 
@@ -308,6 +309,13 @@ EOF
     run_as_root systemctl daemon-reload
     run_as_root systemctl enable "${SERVICE_NAME}"
     run_as_root systemctl restart "${SERVICE_NAME}"
+}
+
+create_write_dir() {
+  echo "[INFO] Creating persistent state directory at /var/lib/prx-camera..."
+  
+  run_as_root mkdir -p /var/lib/prx-camera
+  run_as_root chmod 700 /var/lib/prx-camera
 }
 
 install_uninstaller() {
@@ -349,6 +357,7 @@ verify_checksum
 validate_binary
 install_dependencies
 install_binary
+create_write_dir
 install_service
 install_uninstaller
 
