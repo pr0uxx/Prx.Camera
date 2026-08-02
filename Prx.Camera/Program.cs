@@ -2,7 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Prx.Camera.Records;
+using Prx.Camera.Models.Records;
 using Prx.Camera.Services;
 
 namespace Prx.Camera;

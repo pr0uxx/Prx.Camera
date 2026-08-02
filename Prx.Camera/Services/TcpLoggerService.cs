@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Prx.Camera.Records;
 using System.Text;
+using Prx.Camera.Models.Records;
 using static System.Convert;
 
 namespace Prx.Camera.Services;
