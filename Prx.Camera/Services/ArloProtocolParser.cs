@@ -1,5 +1,5 @@
 using Microsoft.Extensions.Logging;
-using Prx.Camera.Records;
+using Prx.Camera.Models.Records;
 
 namespace Prx.Camera.Services;
 

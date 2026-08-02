@@ -16,6 +16,10 @@
       <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.10" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\Prx.Camera.Models\Prx.Camera.Models.csproj" />
+    </ItemGroup>
+
     <Target Name="InjectVersionClass" BeforeTargets="CoreCompile">
         <PropertyGroup>
             <GeneratedVersionFile>$(IntermediateOutputPath)AppVersion.g.cs</GeneratedVersionFile>

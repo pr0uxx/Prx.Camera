@@ -1,4 +1,4 @@
-namespace Prx.Camera.Records;
+namespace Prx.Camera.Models.Records;
 
 public sealed record PrxCameraOptions
 {

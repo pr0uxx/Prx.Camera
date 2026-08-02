@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Prx.Camera.Records;
+namespace Prx.Camera.Models.Records;
 
 [JsonSerializable(typeof(ArloHandshakeRequest))]
 [JsonSerializable(typeof(ArloHandshakeRequest[]))]
