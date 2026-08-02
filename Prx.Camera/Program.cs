@@ -4,6 +4,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Prx.Camera.Models.Records;
 using Prx.Camera.Services;
+using Prx.Camera.Services.State.Camera;
 
 namespace Prx.Camera;
 
@@ -32,6 +33,7 @@ public static class Program
         builder.Services.AddSingleton<IArloProtocolParser, ArloProtocolParser>();
         builder.Services.AddSingleton<IRegistrationHandler, RegistrationHandler>();
         builder.Services.AddSingleton<ITcpLoggerService, TcpLoggerService>();
+        builder.Services.AddSingleton<ICameraStatePersistenceService, CameraStatePersistenceService>();
 
         builder.Services.AddHostedService<BaseStationService>();
 
