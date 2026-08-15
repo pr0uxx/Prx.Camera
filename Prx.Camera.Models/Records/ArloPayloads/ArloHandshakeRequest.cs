@@ -1,23 +1,12 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Prx.Camera.Models.Interfaces;
 
-namespace Prx.Camera.Models.Records;
+namespace Prx.Camera.Models.Records.ArloPayloads;
 
-[JsonSerializable(typeof(ArloHandshakeRequest))]
-[JsonSerializable(typeof(ArloHandshakeRequest[]))]
-public sealed partial class ArloJsonContext : JsonSerializerContext
+
+public sealed record ArloHandshakeRequest : ArloEventEnvelope, IAotJsonDeserializable<ArloHandshakeRequest>
 {
-}
-
-
-public sealed record ArloHandshakeRequest
-{
-    [JsonPropertyName("ID")]
-    public int Id { get; init; }
-
-    [JsonPropertyName("Type")]
-    public string? Type { get; init; }
-
     [JsonPropertyName("SystemSerialNumber")]
     public string? SystemSerialNumber { get; init; }
 
@@ -83,11 +72,11 @@ public sealed record ArloHandshakeRequest
 
     public static ArloHandshakeRequest? Deserialize(ReadOnlySpan<byte> buffer)
     {
-        return JsonSerializer.Deserialize(buffer, ArloJsonContext.Default.ArloHandshakeRequest);
+        return JsonSerializer.Deserialize(buffer, Classes.SerializationContext.ArloJsonContext.Default.ArloHandshakeRequest);
     }
 
     public static ArloHandshakeRequest[]? DeserializeArray(ReadOnlySpan<byte> buffer)
     {
-        return JsonSerializer.Deserialize(buffer, ArloJsonContext.Default.ArloHandshakeRequestArray);
+        return JsonSerializer.Deserialize(buffer, Classes.SerializationContext.ArloJsonContext.Default.ArloHandshakeRequestArray);
     }
 }
