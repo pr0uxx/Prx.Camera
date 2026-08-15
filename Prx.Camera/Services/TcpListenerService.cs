@@ -1,6 +1,7 @@
 using System.Buffers;
 using System.Net;
 using System.Net.Sockets;
+using Prx.Camera.Models.Interfaces;
 
 namespace Prx.Camera.Services;
 
@@ -11,19 +12,30 @@ public interface ITcpListenerService
 
 public sealed class TcpListenerService(
     IArloProtocolParser parser,
-    IRegistrationHandler handler,
-    ITcpLoggerService tcpLogger
+    IArloEventHandler handler,
+    ITcpLoggerService tcpLogger,
+    ICameraSessionRegistry cameraSessionRegistry
     ) : ITcpListenerService
 {
     public async Task StartAsync(CancellationToken ct = default)
     {
-        var listener = new TcpListener(IPAddress.Any, 4000);
-        listener.Start();
-
-        while (!ct.IsCancellationRequested)
+        TcpListener? listener = null;
+        
+        try
         {
-            var client = await listener.AcceptTcpClientAsync(ct);
-            _ = ProcessClientAsync(client, ct);
+            listener = new TcpListener(IPAddress.Any, 4000);
+            listener.Start();
+
+            while (!ct.IsCancellationRequested)
+            {
+                var client = await listener.AcceptTcpClientAsync(ct);
+                _ = ProcessClientAsync(client, ct);
+            }
+        }
+        finally
+        {
+            listener?.Stop();
+            listener?.Dispose();
         }
     }
 
@@ -41,11 +53,17 @@ public sealed class TcpListenerService(
                 if (read <= 0) break;
 
                 tcpLogger.LogBuffer(connectionId, buffer.AsSpan(0, read));
+                ulong? serialHash = null;
                 
-                var registration = parser.Parse(buffer.AsSpan(0, read));
-                if (registration is not null)
+                var message = parser.Parse(buffer.AsSpan(0, read));
+                if (message is not null)
                 {
-                    await handler.HandleAsync(registration, ct);
+                    serialHash = await handler.HandleAsync(message.Value, client, ct);
+                }
+
+                if (ct.IsCancellationRequested && serialHash.HasValue) //or if tcp client is closed but idk how to check
+                {
+                    _ = cameraSessionRegistry.TryRemove(serialHash.Value);
                 }
             }
         }
