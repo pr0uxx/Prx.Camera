@@ -11,6 +11,18 @@ SERVICE_NAME="prx-camera.service"
 MODE="${MODE:-PRODUCTION}"
 
 LOCAL_FILE="${LOCAL_FILE:-}"
+DEBUG_MODE="false"
+
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        --debug) 
+            DEBUG_MODE="true"
+            ;;
+    esac
+    shift
+done
+
+
 
 validate_mode() {
   case "$MODE" in
@@ -297,7 +309,7 @@ After=network.target
 
 [Service]
 ExecStart=${INSTALL_PATH}
-Environment=Debug=false
+Environment=Debug=${DEBUG_MODE}
 Environment=StateFilepath=/var/lib/prx-camera/state.bin
 Restart=always
 RestartSec=5
