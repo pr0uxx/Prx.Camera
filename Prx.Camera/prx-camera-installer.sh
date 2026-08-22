@@ -22,6 +22,8 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
+IS_CURRENT_VERSION=0
+
 
 
 validate_mode() {
@@ -153,7 +155,8 @@ check_existing_version() {
 
         if [[ "$current_version" == "$LATEST_VERSION" ]]; then
             echo "[INFO] Prx.Camera is already up to date ($current_version). Exiting."
-            exit 0
+            IS_CURRENT_VERSION=1
+            return
         fi
         
         echo "[INFO] Updating from $current_version to $LATEST_VERSION..."
@@ -200,6 +203,9 @@ download_release() {
         fi
         
     check_existing_version
+    if [ $IS_CURRENT_VERSION -eq 1 ]; then
+      return
+    fi
 
     # A release now ships one binary PER PLATFORM plus a .sha256 for each,
     # so grabbing "the" browser_download_url no longer works - filter down
@@ -365,12 +371,16 @@ check_sudo
 PLATFORM="$(detect_platform)"
 echo "[INFO] Detected platform: $PLATFORM"
 download_release
-verify_checksum
-validate_binary
-install_dependencies
-install_binary
+if [ $IS_CURRENT_VERSION -eq 0 ]; then
+  verify_checksum
+  validate_binary
+  install_dependencies
+  install_binary
+fi
 create_write_dir
-install_service
+if [ $IS_CURRENT_VERSION -eq 0 ]; then
+  install_service
+fi
 install_uninstaller
 
 echo "Installation complete."
