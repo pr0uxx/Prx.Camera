@@ -9,6 +9,8 @@ namespace Prx.Camera.Services;
 public interface ITcpLoggerService
 {
     void LogBuffer(Guid connectionId, ReadOnlySpan<byte> buffer);
+
+    void LogError(Exception exception, Guid connectionId, string error);
 }
 
 public partial class TcpLoggerService(
@@ -26,6 +28,8 @@ public partial class TcpLoggerService(
         LogRxBufferAsAscii(logger, connectionId, ToBinarySafeAscii(buffer));
     }
 
+    public void LogError(Exception exception, Guid connectionId, string error) => LogError(logger, exception, connectionId, error);
+
     private static string ToBinarySafeAscii(ReadOnlySpan<byte> buffer)
     {
         Span<char> chars = stackalloc char[buffer.Length];
@@ -37,6 +41,9 @@ public partial class TcpLoggerService(
 
         return new string(chars);
     }
+    
+    [LoggerMessage(LogLevel.Error, "RX {connectionId}: {error}")]
+    static partial void LogError(ILogger<TcpLoggerService> logger, Exception exception, Guid connectionId, string error);
 
     [LoggerMessage(LogLevel.Debug, "RX {connectionId}: {bufferLength} bytes")]
     static partial void LogRxBufferLengthBytes(ILogger<TcpLoggerService> logger, Guid connectionId, int bufferLength);

@@ -1,5 +1,4 @@
-﻿using Prx.Camera.Models.Records;
-using Prx.Camera.Models.Records.ArloPayloads;
+﻿using Prx.Camera.Models.Records.ArloPayloads;
 
 namespace Prx.Camera.Models.Structs;
 

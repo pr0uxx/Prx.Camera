@@ -10,4 +10,10 @@ public record ArloPong() : ArloEventEnvelope("pong", 3), IAotJsonDeserializable<
 
     public static ArloPong[]? DeserializeArray(ReadOnlySpan<byte> buffer) =>
         JsonSerializer.Deserialize(buffer, Classes.SerializationContext.ArloJsonContext.Default.ArloPongArray);
+    
+    public byte[] SerializeToByteArray()
+    {
+        return JsonSerializer.SerializeToUtf8Bytes(this,
+            Classes.SerializationContext.ArloJsonContext.Default.ArloPong);
+    }
 }
