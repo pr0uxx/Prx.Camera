@@ -1,9 +1,7 @@
-﻿using System.Collections.Concurrent;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Prx.Camera.Models.Classes;
 using Prx.Camera.Models.Interfaces;
 using Prx.Camera.Models.Records;
 using Prx.Camera.Services;
